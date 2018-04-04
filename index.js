@@ -4,6 +4,7 @@ global.isTesting = process.env.NODE_ENV === 'testing';
 global.isLocalDev = process.env.NODE_ENV === 'localdev';
 
 const express = require('express');
+const path = require('path');
 const morgan = require('morgan');
 const handlebars = require('express-handlebars');
 
@@ -51,11 +52,7 @@ const serverStart = routes.registerRoutes(app).then(r => {
         console.log(`Finished registered ${r.length} routes`);
     }
 
-    // For serving React
-    app.get('/*', function response(req, res) {
-        const context = {};
-        return res.render('../dist/index.handlebars', context);
-    });
+    app.use('/', express.static('./client/build'));
 
     app.use(missingRouteHandler);
     app.use(errorHandler);
