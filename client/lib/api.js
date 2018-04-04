@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const baseApiUrl = `https://api.playbattlegrounds.com`;
 const shards = [
     'xbox-as',
     'xbox-eu',
@@ -17,9 +18,10 @@ const shards = [
 
 class Api {
 
-    constructor(apiKey) {
+    constructor(apiKey, shard) {
+        validateShard(shard);
         this._client = axios.create({
-            baseURL: "https://api.playbattlegrounds.com",
+            baseURL: makeUrl(shard),
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Accept': 'application/vnd.api+json'
@@ -27,40 +29,80 @@ class Api {
         });
     }
 
-    getStatus() {
-        return this._client.get(`/status`).then(parseResp);
+    /**
+     * Sets the JWT for authentication
+     * @param apiKey
+     */
+    setApiKey(apiKey) {
+        this._client.defaults.headers.Authorization = `Bearer ${apiKey}`;
     }
 
-    searchPlayersById(shard, playerIds) {
+    /**
+     * Sets the server shard
+     * @param shard
+     */
+    setShard(shard) {
         validateShard(shard);
+        this._client.defaults.baseURL = makeUrl(shard);
+    }
+
+    /**
+     * Gets the status of the PUBG API
+     * @returns {PromiseLike<T> | Promise<T> | void | undefined}
+     */
+    getStatus() {
+        return this._client.get(`${baseApiUrl}/status`).then(parseResp);
+    }
+
+    /**
+     * Search for players by their IDs
+     * @param playerIds an array of player ids
+     * @returns {PromiseLike<T> | Promise<T> | void | undefined}
+     */
+    searchPlayersById(playerIds) {
         const opts = {
             params: {
                 'filter[playerIds]': playerIds.join(',')
             }
         };
-        return this._client.get(`/shards/${shard}/players`, opts).then(parseResp);
+        return this._client.get(`/players`, opts).then(parseResp);
     }
 
-    searchPlayersByName(shard, playerNames) {
-        validateShard(shard);
+    /**
+     * Search for players by their player names
+     * @param playerNames an array of player names
+     * @returns {PromiseLike<T> | Promise<T> | void | undefined}
+     */
+    searchPlayersByName(playerNames) {
         const opts = {
             params: {
                 'filter[playerNames]': playerNames.join(',')
             }
         };
-        return this._client.get(`/shards/${shard}/players`, opts).then(parseResp);
+        return this._client.get(`/players`, opts).then(parseResp);
     }
 
-    getPlayer(shard, playerId) {
-        validateShard(shard);
-        return this._client.get(`/shards/${shard}/players/${playerId}`).then(parseResp);
+    /**
+     * Get a player by their ID
+     * @param playerId
+     * @returns {PromiseLike<T> | Promise<T> | void | undefined}
+     */
+    getPlayer(playerId) {
+        return this._client.get(`/players/${playerId}`).then(parseResp);
     }
 
-    getMatch(shard, matchId) {
-        validateShard(shard);
-        return this._client.get(`/shards/${shard}/matches/${matchId}`).then(parseResp);
+    /**
+     * Get a match by it's ID
+     * @param matchId
+     * @returns {PromiseLike<T> | Promise<T> | void | undefined}
+     */
+    getMatch(matchId) {
+        return this._client.get(`/matches/${matchId}`).then(parseResp);
     }
+}
 
+function makeUrl(shard) {
+    return `${baseApiUrl}/shards/${shard}`;
 }
 
 function validateShard(shard) {
